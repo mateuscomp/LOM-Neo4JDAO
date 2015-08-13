@@ -25,13 +25,13 @@
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j</artifactId>
-			<version>1.5</version>
+			<version>2.2.3</version>
 		</dependency>
 
 		<dependency>
 			<groupId>com.nanuvem.lom</groupId>
 			<artifactId>api</artifactId>
-			<version>0.0.8</version>
+			<version>0.0.9</version>
 		</dependency>
 	</dependencies>
 </project>

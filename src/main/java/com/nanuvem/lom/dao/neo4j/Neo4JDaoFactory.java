@@ -8,9 +8,10 @@ import com.nanuvem.lom.api.dao.PropertyTypeDao;
 
 public class Neo4JDaoFactory implements DaoFactory {
 
+	private Neo4JPropertyTypeDao propertyTypeDao = null;
+	private Neo4JEntityTypeDao entityTypeDao;
+
 	private Neo4JConnector connector;
-	
-	private EntityTypeDao entityTypeDao;
 
 	public EntityTypeDao createEntityTypeDao() {
 		if (this.entityTypeDao == null) {
@@ -20,8 +21,11 @@ public class Neo4JDaoFactory implements DaoFactory {
 	}
 
 	public PropertyTypeDao createPropertyTypeDao() {
-		// TODO Auto-generated method stub
-		return null;
+		if (this.propertyTypeDao != null) {
+			this.propertyTypeDao = new Neo4JPropertyTypeDao(connector,
+					(Neo4JEntityTypeDao) createEntityTypeDao());
+		}
+		return this.propertyTypeDao;
 	}
 
 	public EntityDao createEntityDao() {
@@ -36,7 +40,6 @@ public class Neo4JDaoFactory implements DaoFactory {
 
 	public void createDatabaseSchema() {
 		// TODO Auto-generated method stub
-
 	}
 
 	public void dropDatabaseSchema() {

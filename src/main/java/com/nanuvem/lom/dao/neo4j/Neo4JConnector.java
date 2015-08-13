@@ -2,21 +2,25 @@ package com.nanuvem.lom.dao.neo4j;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
 public class Neo4JConnector {
 
+	private static final String DB_PATH = "C:\\Users\\Mateus\\Documents\\Neo4j\\neo4j-store-with-new-indexing";
+//	private static final String DB_PATH = "C:\\Users\\Mateus\\Documents\\Neo4j";
 	private GraphDatabaseService graphDatabaseService;
 
 	public Neo4JConnector() {
-		String separator = System.getProperty("file.separator");
-
-		this.graphDatabaseService = new EmbeddedGraphDatabase(
-				System.getProperty("user.home") + separator + "neo4j_database");
+		this.graphDatabaseService = new GraphDatabaseFactory()
+				.newEmbeddedDatabase(DB_PATH);
 	}
 
 	public Transaction iniciarTransacao() {
 		return this.graphDatabaseService.beginTx();
+	}
+	
+	public void finalizarTransacao(){
+		this.graphDatabaseService.shutdown();
 	}
 
 	public GraphDatabaseService getGraphDatabaseService() {
