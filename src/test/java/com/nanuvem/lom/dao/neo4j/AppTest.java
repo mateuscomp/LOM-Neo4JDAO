@@ -17,16 +17,16 @@ public class AppTest {
 		Neo4JPropertyTypeDao propertyTypeDao = new Neo4JPropertyTypeDao(connector, entityTypeDao);
 
 		System.out.println("========= Creating =========");
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 1; i++) {
 			EntityType entityType = new EntityType();
 			entityType.setNamespace("Fernando");
-			entityType.setName("Mateus");
+			entityType.setName("Mateus" + i);
 			entityType.setVersion(0);
 			entityTypeDao.create(entityType);
 			
 			System.out.println("EntityType: id = " + entityType.getId());
 			
-			for(int j = 0; j < 10; j++){
+			for(int j = 0; j < 1; j++){
 				PropertyType pt = new PropertyType();
 				pt.setEntityType(entityType);
 				pt.setSequence(0);
@@ -57,7 +57,11 @@ public class AppTest {
 
 		System.out.println("\n");
 		System.out.println("========= CONSULTA 4 =========");
-		System.out.println(propertyTypeDao.findPropertyTypeById(4L));
+		System.out.println(propertyTypeDao.findPropertyTypeById(5L));
+		
+		System.out.println("\n");
+		System.out.println("========= CONSULTA 5 =========");
+		System.out.println(propertyTypeDao.findPropertyTypeByNameAndEntityTypeFullName("propertyType 0", "Fernando.Mateus0"));
 		
 		connector.finalizarTransacao();
 	}

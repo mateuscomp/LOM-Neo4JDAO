@@ -66,7 +66,8 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 				Result result = connector.getGraphDatabaseService().execute(
 						"MATCH (et:" + NodeType.ENTITY_TYPE + ")-[:"
 								+ Neo4JRelation.HAS_A_PROPERTY_TYPE
-								+ "]->(pt) return pt, et")) {
+								+ "]->(pt) WHERE pt.id=" + id
+								+ " return pt, et")) {
 
 			Iterator<Node> iterator = result.columnAs("pt");
 			for (Node node : IteratorUtil.asIterable(iterator)) {
@@ -111,8 +112,40 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	@Override
 	public PropertyType findPropertyTypeByNameAndEntityTypeFullName(
 			String propertyTypeName, String entityTypeFullName) {
-		// TODO Auto-generated method stub
-		return null;
+
+		String namespace = entityTypeFullName != null ? entityTypeFullName
+				.substring(0, entityTypeFullName.lastIndexOf(".")) : "";
+
+		String name = entityTypeFullName != null ? entityTypeFullName
+				.substring(entityTypeFullName.lastIndexOf(".") + 1,
+						entityTypeFullName.length()) : "";
+
+		PropertyType propertyType = null;
+
+		String query = "MATCH (et:" + NodeType.ENTITY_TYPE + ")-[:"
+				+ Neo4JRelation.HAS_A_PROPERTY_TYPE
+				+ "]->(pt) WHERE et.namespace=\"" + namespace
+				+ "\" AND et.name=\"" + name + "\" AND pt.name=\"" + propertyTypeName + "\" return pt, et";
+		
+		try (Transaction tx = connector.iniciarTransacao();
+				Result result = connector.getGraphDatabaseService().execute(
+						query)) {
+
+			Iterator<Node> iterator = result.columnAs("pt");
+			for (Node node : IteratorUtil.asIterable(iterator)) {
+				propertyType = newPropertyType(node);
+				break;
+			}
+
+			if (propertyType != null) {
+				Iterator<Node> iterator2 = result.columnAs("et");
+				for (Node node : IteratorUtil.asIterable(iterator2)) {
+					propertyType.setEntityType(newEntityType(node));
+					break;
+				}
+			}
+		}
+		return propertyType;
 	}
 
 	@Override
@@ -142,5 +175,4 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 		}
 		return null;
 	}
-
 }
