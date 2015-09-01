@@ -7,7 +7,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 public class Neo4JConnector {
 
 	private static final String DB_PATH = "C:\\Users\\Mateus\\Documents\\Neo4j\\neo4j-store";
-//	private static final String DB_PATH = "C:\\Users\\Mateus\\Documents\\Neo4j";
+	
 	private GraphDatabaseService graphDatabaseService;
 
 	public Neo4JConnector() {

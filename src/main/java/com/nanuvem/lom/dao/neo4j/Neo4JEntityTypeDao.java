@@ -10,6 +10,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
 
 import com.nanuvem.lom.api.EntityType;
+import com.nanuvem.lom.api.MetadataException;
 import com.nanuvem.lom.api.dao.EntityTypeDao;
 
 public class Neo4JEntityTypeDao implements EntityTypeDao {
@@ -134,9 +135,63 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 		return entitiesTypes.get(0);
 	}
 
-	public EntityType update(EntityType entity) {
-		// TODO Auto-generated method stub
-		return null;
+	public EntityType update(EntityType entityType) {
+		EntityType entityTypePersisted = this.findById(entityType.getId());
+
+		if (entityTypePersisted == null) {
+			throw new MetadataException("Invalid id for Entity "
+					+ entityType.getNamespace() + "." + entityType.getName());
+		}
+
+		else if (entityTypePersisted.getVersion() > entityType.getVersion()) {
+			throw new MetadataException(
+					"Updating a deprecated version of Entity "
+							+ entityTypePersisted.getNamespace()
+							+ "."
+							+ entityTypePersisted.getName()
+							+ ". Get the Entity again to obtain the newest version and proceed updating.");
+		}
+		entityType.setVersion(entityTypePersisted.getVersion() + 1);
+
+		// String query = "MATCH (n:" + NodeType.ENTITY_TYPE + ") "
+		// + "WITH n "
+		// + "SET "
+		// + "n.namespace='" + entityType.getNamespace() + "', "
+		// + "n.name='" + entityType.getName() + "', "
+		// + "n.version=" + entityType.getVersion() + " "
+		// + "WHERE n.id = "
+		// + entityTypePersisted.getId() + " return n";
+		//
+		// System.out.println("Query: " + query);
+		// try (Transaction tx = connector.iniciarTransacao();
+		// Result result = connector.getGraphDatabaseService().execute(
+		// query)) {
+		//
+		// System.out.println(result.resultAsString());
+		//
+		// Iterator<Node> iterator = result.columnAs("n");
+		// for (Node node : IteratorUtil.asIterable(iterator)) {
+		// System.out.println("########### NODE");
+		// }
+		//
+		// }
+
+		try (Transaction tx = connector.iniciarTransacao();
+				Result result = connector.getGraphDatabaseService().execute(
+						"match (n:" + NodeType.ENTITY_TYPE + ") WHERE n.id = "
+								+ String.valueOf(entityType.getId())
+								+ " return n")) {
+
+			Iterator<Node> iterator = result.columnAs("n");
+			for (Node node : IteratorUtil.asIterable(iterator)) {
+				node.setProperty("namespace", entityType.getNamespace());
+				node.setProperty("name", entityType.getName());
+				node.setProperty("version", entityType.getVersion());
+				break;
+			}
+			tx.success();
+		}
+		return findById(entityType.getId());
 	}
 
 	public void delete(Long id) {

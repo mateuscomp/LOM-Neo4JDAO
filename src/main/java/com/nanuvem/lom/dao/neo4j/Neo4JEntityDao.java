@@ -42,7 +42,7 @@ public class Neo4JEntityDao implements EntityDao {
 			tx.success();
 
 			entityTypeNode.createRelationshipTo(noEntity,
-					Neo4JRelation.HAS_A_PROPERTY_TYPE);
+					Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE);
 			tx.success();
 
 			entity.setId(autoIncrementId);
