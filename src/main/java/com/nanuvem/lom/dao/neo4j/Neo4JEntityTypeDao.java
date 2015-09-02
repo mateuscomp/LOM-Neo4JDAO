@@ -170,7 +170,7 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 		
 	}
 
-	private EntityType newEntityType(Node node) {
+	public static EntityType newEntityType(Node node) {
 		EntityType entityType = new EntityType();
 		entityType.setId((Long) node.getProperty("id"));
 

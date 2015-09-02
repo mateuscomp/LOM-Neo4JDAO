@@ -2,6 +2,7 @@ package com.nanuvem.lom.dao.neo4j;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -62,42 +63,24 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	public PropertyType findPropertyTypeById(Long id) {
 		PropertyType propertyType = null;
 
+		String query = "MATCH (pt:PROPERTY_TYPE { id: " + id
+				+ "})--(et) RETURN pt, et";
 		try (Transaction tx = connector.iniciarTransacao();
-				Result result = connector
-						.getGraphDatabaseService()
-						.execute(
-								"MATCH (et:"
-										+ NodeType.ENTITY_TYPE
-										+ ")-[:"
-										+ Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
-										+ "]->(pt) WHERE pt.id=" + id
-										+ " return pt, et")) {
+				Result result = connector.getGraphDatabaseService().execute(
+						query)) {
 
-			Iterator<Node> iterator = result.columnAs("pt");
-			for (Node node : IteratorUtil.asIterable(iterator)) {
-				propertyType = newPropertyType(node);
-				break;
-			}
+			if (result.hasNext()) {
+				Map<String, Object> next = result.next();
+				Node nodePT = (Node) next.get("pt");
+				Node nodeET = (Node) next.get("et");
 
-			if (propertyType != null) {
-				Iterator<Node> iterator2 = result.columnAs("et");
-				for (Node node : IteratorUtil.asIterable(iterator2)) {
-					propertyType.setEntityType(newEntityType(node));
-					break;
-				}
+				EntityType entityType = Neo4JEntityTypeDao
+						.newEntityType(nodeET);
+				propertyType = newPropertyType(nodePT);
+				propertyType.setEntityType(entityType);
 			}
 		}
 		return propertyType;
-	}
-
-	private EntityType newEntityType(Node node) {
-		EntityType entityType = new EntityType();
-		entityType.setId((Long) node.getProperty("id"));
-		entityType.setVersion((Integer) node.getProperty("version"));
-		entityType.setNamespace((String) node.getProperty("namespace"));
-		entityType.setName((String) node.getProperty("name"));
-
-		return entityType;
 	}
 
 	private PropertyType newPropertyType(Node node) {
@@ -105,7 +88,8 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 		propertyType.setId((Long) node.getProperty("id"));
 		propertyType.setVersion((Integer) node.getProperty("version"));
 		propertyType.setName((String) node.getProperty("name"));
-		propertyType.setConfiguration((String) node.getProperty("configuration"));
+		propertyType.setConfiguration((String) node
+				.getProperty("configuration"));
 		propertyType.setType(Type.getType((String) node.getProperty("type")));
 		propertyType.setSequence((Integer) node.getProperty("sequence"));
 
@@ -116,32 +100,32 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	public PropertyType findPropertyTypeByNameAndEntityTypeFullName(
 			String propertyTypeName, String entityTypeFullName) {
 
-		String namespace = entityTypeFullName != null ? entityTypeFullName.substring(0, entityTypeFullName.lastIndexOf(".")) : "";
-		String name = entityTypeFullName != null ? entityTypeFullName.substring(entityTypeFullName.lastIndexOf(".") + 1, entityTypeFullName.length()) : "";
+		String namespace = entityTypeFullName != null ? entityTypeFullName
+				.substring(0, entityTypeFullName.lastIndexOf(".")) : "";
+		String name = entityTypeFullName != null ? entityTypeFullName
+				.substring(entityTypeFullName.lastIndexOf(".") + 1,
+						entityTypeFullName.length()) : "";
 
 		PropertyType propertyType = null;
-		String query = "MATCH (et:" + NodeType.ENTITY_TYPE + ")-[:"
-				+ Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
-				+ "]->(pt) WHERE et.namespace=\"" + namespace
-				+ "\" AND et.name=\"" + name + "\" AND pt.name=\""
-				+ propertyTypeName + "\" return pt, et";
 
+		String query = "MATCH (pt:PROPERTY_TYPE {name: '"+propertyTypeName+"'})-[r:"
+				+ Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
+				+ "]->(et:ENTITY_TYPE {namespace: '" + namespace + "', name: '"
+				+ name + "'}) RETURN pt, et";
+		
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
 
-			Iterator<Node> iterator = result.columnAs("pt");
-			for (Node node : IteratorUtil.asIterable(iterator)) {
-				propertyType = newPropertyType(node);
-				break;
-			}
+			if (result.hasNext()) {
+				Map<String, Object> next = result.next();
+				Node nodePT = (Node) next.get("pt");
+				Node nodeET = (Node) next.get("et");
 
-			if (propertyType != null) {
-				Iterator<Node> iterator2 = result.columnAs("et");
-				for (Node node : IteratorUtil.asIterable(iterator2)) {
-					propertyType.setEntityType(newEntityType(node));
-					break;
-				}
+				EntityType entityType = Neo4JEntityTypeDao
+						.newEntityType(nodeET);
+				propertyType = newPropertyType(nodePT);
+				propertyType.setEntityType(entityType);
 			}
 		}
 		return propertyType;

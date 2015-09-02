@@ -18,7 +18,7 @@ public class AppTest {
 				connector, entityTypeDao);
 
 		System.out.println("========= Creating =========");
-		for (int i = 0; i < 1; i++) {
+		for (int i = 0; i < 2; i++) {
 			EntityType entityType = new EntityType();
 			entityType.setNamespace("Fernando");
 			entityType.setName("Mateus" + i);
@@ -27,11 +27,11 @@ public class AppTest {
 
 			System.out.println("EntityType: id = " + entityType.getId());
 
-			for (int j = 0; j < 1; j++) {
+			for (int j = 0; j < 2; j++) {
 				PropertyType pt = new PropertyType();
 				pt.setEntityType(entityType);
 				pt.setSequence(0);
-				pt.setName("propertyType " + j);
+				pt.setName("propertyType" + j);
 				pt.setType(Type.TEXT);
 				pt.setConfiguration("\"{mandatory\" : true}");
 				propertyTypeDao.create(pt);
@@ -70,13 +70,13 @@ public class AppTest {
 
 		System.out.println("\n");
 		System.out.println("========= CONSULTA 4 =========");
-		System.out.println(propertyTypeDao.findPropertyTypeById(1L));
+		System.out.println(propertyTypeDao.findPropertyTypeById(2L));
 
 		System.out.println("\n");
 		System.out.println("========= CONSULTA 5 =========");
 		System.out.println(propertyTypeDao
-				.findPropertyTypeByNameAndEntityTypeFullName("propertyType 0",
-						"Fernando.Mateus0"));
+				.findPropertyTypeByNameAndEntityTypeFullName("propertyType1",
+						"Rodrigo.Vilar"));
 
 		connector.finalizarTransacao();
 	}
