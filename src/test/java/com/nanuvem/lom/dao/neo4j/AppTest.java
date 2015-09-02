@@ -77,6 +77,14 @@ public class AppTest {
 		System.out.println(propertyTypeDao
 				.findPropertyTypeByNameAndEntityTypeFullName("propertyType1",
 						"Rodrigo.Vilar"));
+		
+		System.out.println("\n");
+		System.out.println("========= CONSULTA 6 =========");
+		List<PropertyType> pts = propertyTypeDao
+				.findPropertiesTypesByFullNameEntityType("Rodrigo.Vilar");
+		for(PropertyType pt : pts){
+			System.out.println(pt);
+		}
 
 		connector.finalizarTransacao();
 	}

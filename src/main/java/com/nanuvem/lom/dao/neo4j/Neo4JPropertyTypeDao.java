@@ -1,6 +1,7 @@
 package com.nanuvem.lom.dao.neo4j;
 
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -108,11 +109,11 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 		PropertyType propertyType = null;
 
-		String query = "MATCH (pt:PROPERTY_TYPE {name: '"+propertyTypeName+"'})-[r:"
-				+ Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
+		String query = "MATCH (pt:PROPERTY_TYPE {name: '" + propertyTypeName
+				+ "'})-[r:" + Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
 				+ "]->(et:ENTITY_TYPE {namespace: '" + namespace + "', name: '"
 				+ name + "'}) RETURN pt, et";
-		
+
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
@@ -134,13 +135,41 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	@Override
 	public List<PropertyType> findPropertiesTypesByFullNameEntityType(
 			String fullnameEntityType) {
-		// TODO Auto-generated method stub
-		return null;
+
+		String namespace = fullnameEntityType != null ? fullnameEntityType
+				.substring(0, fullnameEntityType.lastIndexOf(".")) : "";
+		String name = fullnameEntityType != null ? fullnameEntityType
+				.substring(fullnameEntityType.lastIndexOf(".") + 1,
+						fullnameEntityType.length()) : "";
+
+		List<PropertyType> propertiesTypes = new LinkedList<PropertyType>();
+
+		String query = "MATCH (pt:PROPERTY_TYPE)-[r:" + Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
+				+ "]->(et:ENTITY_TYPE {namespace: '" + namespace + "', name: '"
+				+ name + "'}) RETURN pt, et";
+
+		try (Transaction tx = connector.iniciarTransacao();
+				Result result = connector.getGraphDatabaseService().execute(
+						query)) {
+
+			while (result.hasNext()) {
+				Map<String, Object> next = result.next();
+				Node nodePT = (Node) next.get("pt");
+				Node nodeET = (Node) next.get("et");
+
+				EntityType entityType = Neo4JEntityTypeDao
+						.newEntityType(nodeET);
+				PropertyType propertyType = new PropertyType();
+				propertyType = newPropertyType(nodePT);
+				propertyType.setEntityType(entityType);
+				propertiesTypes.add(propertyType);
+			}
+		}
+		return propertiesTypes;
 	}
 
 	@Override
 	public PropertyType update(PropertyType propertyType) {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
