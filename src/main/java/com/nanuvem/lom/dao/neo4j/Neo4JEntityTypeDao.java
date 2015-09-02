@@ -153,55 +153,34 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 		}
 		entityType.setVersion(entityTypePersisted.getVersion() + 1);
 
-		// String query = "MATCH (n:" + NodeType.ENTITY_TYPE + ") "
-		// + "WITH n "
-		// + "SET "
-		// + "n.namespace='" + entityType.getNamespace() + "', "
-		// + "n.name='" + entityType.getName() + "', "
-		// + "n.version=" + entityType.getVersion() + " "
-		// + "WHERE n.id = "
-		// + entityTypePersisted.getId() + " return n";
-		//
-		// System.out.println("Query: " + query);
-		// try (Transaction tx = connector.iniciarTransacao();
-		// Result result = connector.getGraphDatabaseService().execute(
-		// query)) {
-		//
-		// System.out.println(result.resultAsString());
-		//
-		// Iterator<Node> iterator = result.columnAs("n");
-		// for (Node node : IteratorUtil.asIterable(iterator)) {
-		// System.out.println("########### NODE");
-		// }
-		//
-		// }
-
+		String query = "MATCH (n:" + NodeType.ENTITY_TYPE + " {" + "id: "
+				+ entityType.getId() + "}) " + " SET" + " n.namespace= '"
+				+ entityType.getNamespace() + "', " + " n.name= '"
+				+ entityType.getName() + "', " + "n.version= "
+				+ entityType.getVersion() + " return n";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
-						"match (n:" + NodeType.ENTITY_TYPE + ") WHERE n.id = "
-								+ String.valueOf(entityType.getId())
-								+ " return n")) {
-
-			Iterator<Node> iterator = result.columnAs("n");
-			for (Node node : IteratorUtil.asIterable(iterator)) {
-				node.setProperty("namespace", entityType.getNamespace());
-				node.setProperty("name", entityType.getName());
-				node.setProperty("version", entityType.getVersion());
-				break;
-			}
+						query)) {
 			tx.success();
 		}
 		return findById(entityType.getId());
 	}
 
 	public void delete(Long id) {
-		// TODO Auto-generated method stub
+		
 	}
 
 	private EntityType newEntityType(Node node) {
 		EntityType entityType = new EntityType();
 		entityType.setId((Long) node.getProperty("id"));
-		entityType.setVersion((Integer) node.getProperty("version"));
+
+		try {
+			entityType.setVersion((Integer) node.getProperty("version"));
+		} catch (Exception e) {
+			Long version = (Long) node.getProperty("version");
+			entityType.setVersion(Integer.parseInt(version.toString()));
+		}
+
 		entityType.setNamespace((String) node.getProperty("namespace"));
 		entityType.setName((String) node.getProperty("name"));
 
