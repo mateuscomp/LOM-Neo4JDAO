@@ -59,7 +59,7 @@ public class AppTest {
 		System.out.println(entityTypeDao.findByFullName("Fernando.Mateus0"));
 		System.out.println("\n");
 		
-		System.out.println("========= Update =========");
+		System.out.println("========= Update EntityType=========");
 		EntityType et = entityTypeDao.findByFullName("Fernando.Mateus0");
 		et.setNamespace("Rodrigo");
 		et.setName("Vilar");
@@ -85,7 +85,12 @@ public class AppTest {
 		for(PropertyType pt : pts){
 			System.out.println(pt);
 		}
-
+		System.out.println("\n");
+		
+		System.out.println("========= Update EntityType=========");
+		PropertyType propertyType = propertyTypeDao.findPropertyTypeByNameAndEntityTypeFullName("propertyType1", "Rodrigo.Vilar");
+		propertyType.setConfiguration("{\"mandatory\": false}");
+		System.out.println(propertyTypeDao.update(propertyType));
 		connector.finalizarTransacao();
 	}
 }

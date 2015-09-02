@@ -87,12 +87,25 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	private PropertyType newPropertyType(Node node) {
 		PropertyType propertyType = new PropertyType();
 		propertyType.setId((Long) node.getProperty("id"));
-		propertyType.setVersion((Integer) node.getProperty("version"));
+		
+		try {
+			propertyType.setVersion((Integer) node.getProperty("version"));
+		} catch (Exception e) {
+			Long version = (Long) node.getProperty("version");
+			propertyType.setVersion(Integer.parseInt(version.toString()));
+		}
+		
 		propertyType.setName((String) node.getProperty("name"));
 		propertyType.setConfiguration((String) node
 				.getProperty("configuration"));
 		propertyType.setType(Type.getType((String) node.getProperty("type")));
-		propertyType.setSequence((Integer) node.getProperty("sequence"));
+		
+		try {
+			propertyType.setSequence((Integer) node.getProperty("version"));
+		} catch (Exception e) {
+			Long version = (Long) node.getProperty("sequence");
+			propertyType.setSequence(Integer.parseInt(version.toString()));
+		}
 
 		return propertyType;
 	}
@@ -144,7 +157,8 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 		List<PropertyType> propertiesTypes = new LinkedList<PropertyType>();
 
-		String query = "MATCH (pt:PROPERTY_TYPE)-[r:" + Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
+		String query = "MATCH (pt:PROPERTY_TYPE)-[r:"
+				+ Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
 				+ "]->(et:ENTITY_TYPE {namespace: '" + namespace + "', name: '"
 				+ name + "'}) RETURN pt, et";
 
@@ -170,7 +184,20 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 	@Override
 	public PropertyType update(PropertyType propertyType) {
-		return null;
+		String query = "MATCH (n:" + NodeType.PROPERTY_TYPE + " {" + "id: "
+				+ propertyType.getId() + "}) " + " SET" + " n.name= '"
+				+ propertyType.getName() + "', " + "n.version= "
+				+ propertyType.getVersion() + ", " + "n.sequence= "
+				+ propertyType.getSequence() + ", " + "n.type= '"
+				+ propertyType.getType() + "', " + "n.configuration= '"
+				+ propertyType.getConfiguration() + "' " + "return n";
+
+		try (Transaction tx = connector.iniciarTransacao();
+				Result result = connector.getGraphDatabaseService().execute(
+						query)) {
+			tx.success();
+		}
+		return this.findPropertyTypeById(propertyType.getId());
 	}
 
 	public Node findNodeById(Long id) {
