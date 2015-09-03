@@ -180,7 +180,6 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 			Long version = (Long) node.getProperty("version");
 			entityType.setVersion(Integer.parseInt(version.toString()));
 		}
-
 		entityType.setNamespace((String) node.getProperty("namespace"));
 		entityType.setName((String) node.getProperty("name"));
 

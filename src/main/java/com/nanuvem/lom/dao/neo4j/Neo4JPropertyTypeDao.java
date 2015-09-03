@@ -84,7 +84,7 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 		return propertyType;
 	}
 
-	private PropertyType newPropertyType(Node node) {
+	public PropertyType newPropertyType(Node node) {
 		PropertyType propertyType = new PropertyType();
 		propertyType.setId((Long) node.getProperty("id"));
 		

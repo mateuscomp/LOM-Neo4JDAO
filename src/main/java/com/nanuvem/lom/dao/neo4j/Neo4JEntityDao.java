@@ -70,8 +70,7 @@ public class Neo4JEntityDao implements EntityDao {
 				Node nodeE = (Node) next.get("e");
 				Node nodeET = (Node) next.get("et");
 
-				EntityType entityType = Neo4JEntityTypeDao
-						.newEntityType(nodeET);
+				EntityType entityType = Neo4JEntityTypeDao.newEntityType(nodeET);
 				entity = this.newEntity(nodeE);
 				entity.setEntityType(entityType);
 			}
@@ -85,11 +84,15 @@ public class Neo4JEntityDao implements EntityDao {
 		return entity;
 	}
 
-	private Entity newEntity(Node node) {
+	public Entity newEntity(Node node) {
 		Entity entity = new Entity();
 		entity.setId((Long) node.getProperty("id"));
-		entity.setVersion((Integer) node.getProperty("version"));
-
+		try{
+			entity.setVersion((Integer) node.getProperty("version"));
+		} catch(Exception e){
+			Long value = (Long) node.getProperty("version");
+			entity.setVersion(Integer.parseInt(value.toString()));
+		}
 		return entity;
 	}
 
@@ -127,8 +130,17 @@ public class Neo4JEntityDao implements EntityDao {
 
 	@Override
 	public Entity update(Entity entity) {
-		// TODO Auto-generated method stub
-		return null;
+		String query = "MATCH (e:" + NodeType.ENTITY + " {" 
+				+ "id: " + entity.getId() + "}) " 
+				+ " SET" 
+				+ " e.version= " + entity.getVersion()
+				+ " return e";
+		try (Transaction tx = connector.iniciarTransacao();
+				Result result = connector.getGraphDatabaseService().execute(
+						query)) {
+			tx.success();
+		}
+		return findEntityById(entity.getId());
 	}
 
 	@Override
@@ -142,6 +154,23 @@ public class Neo4JEntityDao implements EntityDao {
 			String fullnameEntityType,
 			Map<String, String> nameByPropertiesTypesAndValuesOfProperties) {
 		// TODO Auto-generated method stub
+		return null;
+	}
+
+	public Node findNodeById(Long id) {
+		String query = "MATCH (e:" + NodeType.ENTITY + " {id: " + id + "})-[r:"
+				+ Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE + "]->(et:"
+				+ NodeType.ENTITY_TYPE + ") return e, et";
+
+		try (Transaction tx = connector.iniciarTransacao();
+				Result result = connector.getGraphDatabaseService().execute(
+						query)) {
+
+			if (result.hasNext()) {
+				Map<String, Object> next = result.next();
+				return (Node) next.get("e");
+			}
+		}
 		return null;
 	}
 }
