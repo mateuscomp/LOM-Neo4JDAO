@@ -20,12 +20,15 @@ public class Neo4JEntityDao implements EntityDao {
 	private Neo4JConnector connector;
 
 	private Neo4JEntityTypeDao entityTypeDao;
+	private Neo4JPropertyTypeDao propertyTypeDao;
 
 	public Neo4JEntityDao(Neo4JConnector connector,
-			Neo4JEntityTypeDao entityTypeDao) {
+			Neo4JEntityTypeDao entityTypeDao,
+			Neo4JPropertyTypeDao propertyTypeDao) {
 		this.connector = connector;
 		this.autoIncrementId = 0L;
 		this.entityTypeDao = entityTypeDao;
+		this.propertyTypeDao = propertyTypeDao;
 	}
 
 	@Override
@@ -70,13 +73,14 @@ public class Neo4JEntityDao implements EntityDao {
 				Node nodeE = (Node) next.get("e");
 				Node nodeET = (Node) next.get("et");
 
-				EntityType entityType = Neo4JEntityTypeDao.newEntityType(nodeET);
+				EntityType entityType = Neo4JEntityTypeDao
+						.newEntityType(nodeET);
 				entity = this.newEntity(nodeE);
 				entity.setEntityType(entityType);
 			}
 		}
-		List<Property> properties = Neo4JPropertyDAO
-				.findPropertiesByEntity(entity);
+		List<Property> properties = Neo4JPropertyDAO.findPropertiesByEntity(
+				entity, connector, this, propertyTypeDao);
 		if (entity != null) {
 			entity.setProperties(properties);
 		}
@@ -87,9 +91,9 @@ public class Neo4JEntityDao implements EntityDao {
 	public Entity newEntity(Node node) {
 		Entity entity = new Entity();
 		entity.setId((Long) node.getProperty("id"));
-		try{
+		try {
 			entity.setVersion((Integer) node.getProperty("version"));
-		} catch(Exception e){
+		} catch (Exception e) {
 			Long value = (Long) node.getProperty("version");
 			entity.setVersion(Integer.parseInt(value.toString()));
 		}
@@ -120,7 +124,8 @@ public class Neo4JEntityDao implements EntityDao {
 		}
 		for (Entity entity : entities) {
 			List<Property> properties = Neo4JPropertyDAO
-					.findPropertiesByEntity(entity);
+					.findPropertiesByEntity(entity, connector, this,
+							propertyTypeDao);
 			if (entity != null) {
 				entity.setProperties(properties);
 			}
@@ -130,11 +135,9 @@ public class Neo4JEntityDao implements EntityDao {
 
 	@Override
 	public Entity update(Entity entity) {
-		String query = "MATCH (e:" + NodeType.ENTITY + " {" 
-				+ "id: " + entity.getId() + "}) " 
-				+ " SET" 
-				+ " e.version= " + entity.getVersion()
-				+ " return e";
+		String query = "MATCH (e:" + NodeType.ENTITY + " {" + "id: "
+				+ entity.getId() + "}) " + " SET" + " e.version= "
+				+ entity.getVersion() + " return e";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
