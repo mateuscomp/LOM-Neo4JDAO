@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.nanuvem.lom.api.Entity;
 import com.nanuvem.lom.api.EntityType;
 import com.nanuvem.lom.api.PropertyType;
 import com.nanuvem.lom.api.Type;
@@ -14,8 +15,8 @@ public class AppTest {
 	public void persistirUmEntityType() {
 		Neo4JConnector connector = new Neo4JConnector();
 		Neo4JEntityTypeDao entityTypeDao = new Neo4JEntityTypeDao(connector);
-		Neo4JPropertyTypeDao propertyTypeDao = new Neo4JPropertyTypeDao(
-				connector, entityTypeDao);
+		Neo4JPropertyTypeDao propertyTypeDao = new Neo4JPropertyTypeDao(connector, entityTypeDao);
+		Neo4JEntityDao entityDao = new Neo4JEntityDao(connector, entityTypeDao);
 
 		System.out.println("========= Creating =========");
 		for (int i = 0; i < 2; i++) {
@@ -58,7 +59,7 @@ public class AppTest {
 		System.out.println("========= CONSULTA 3 =========");
 		System.out.println(entityTypeDao.findByFullName("Fernando.Mateus0"));
 		System.out.println("\n");
-		
+
 		System.out.println("========= Update EntityType=========");
 		EntityType et = entityTypeDao.findByFullName("Fernando.Mateus0");
 		et.setNamespace("Rodrigo");
@@ -66,7 +67,6 @@ public class AppTest {
 		EntityType etUpdate = entityTypeDao.update(et);
 		System.out.println(etUpdate);
 		System.out.println("\n");
-		
 
 		System.out.println("\n");
 		System.out.println("========= CONSULTA 4 =========");
@@ -77,20 +77,40 @@ public class AppTest {
 		System.out.println(propertyTypeDao
 				.findPropertyTypeByNameAndEntityTypeFullName("propertyType1",
 						"Rodrigo.Vilar"));
-		
+
 		System.out.println("\n");
 		System.out.println("========= CONSULTA 6 =========");
 		List<PropertyType> pts = propertyTypeDao
 				.findPropertiesTypesByFullNameEntityType("Rodrigo.Vilar");
-		for(PropertyType pt : pts){
+		for (PropertyType pt : pts) {
 			System.out.println(pt);
 		}
 		System.out.println("\n");
-		
+
 		System.out.println("========= Update EntityType=========");
-		PropertyType propertyType = propertyTypeDao.findPropertyTypeByNameAndEntityTypeFullName("propertyType1", "Rodrigo.Vilar");
+		PropertyType propertyType = propertyTypeDao
+				.findPropertyTypeByNameAndEntityTypeFullName("propertyType1",
+						"Rodrigo.Vilar");
 		propertyType.setConfiguration("{\"mandatory\": false}");
 		System.out.println(propertyTypeDao.update(propertyType));
+		System.out.println("\n");
+
+		System.out.println("========= Create Entity=========");
+		Entity entity = new Entity();
+		entity.setEntityType(entityTypeDao.findById(1L));
+		System.out.println(entityDao.create(entity));
+		
+		System.out.println("\n");
+		System.out.println("========= CONSULTA 7 =========");
+		System.out.println(entityDao.findEntityById(1L));
+		
+		System.out.println("\n");
+		System.out.println("========= CONSULTA 8 =========");
+		List<Entity> entities = entityDao.findEntitiesByEntityTypeId(2L);
+		for(Entity ent: entities){
+			System.out.println(ent);
+		}
+		
 		connector.finalizarTransacao();
 	}
 }

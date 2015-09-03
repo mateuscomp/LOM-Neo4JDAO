@@ -64,7 +64,7 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	public PropertyType findPropertyTypeById(Long id) {
 		PropertyType propertyType = null;
 
-		String query = "MATCH (pt:PROPERTY_TYPE { id: " + id
+		String query = "MATCH (pt:" + NodeType.PROPERTY_TYPE + " { id: " + id
 				+ "})--(et) RETURN pt, et";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(

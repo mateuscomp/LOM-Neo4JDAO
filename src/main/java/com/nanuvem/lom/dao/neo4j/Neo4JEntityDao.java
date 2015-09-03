@@ -1,6 +1,5 @@
 package com.nanuvem.lom.dao.neo4j;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -8,10 +7,10 @@ import java.util.Map;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.helpers.collection.IteratorUtil;
 
 import com.nanuvem.lom.api.Entity;
 import com.nanuvem.lom.api.EntityType;
+import com.nanuvem.lom.api.Property;
 import com.nanuvem.lom.api.dao.EntityDao;
 import com.nanuvem.lom.dao.neo4j.relation.Neo4JRelation;
 
@@ -41,8 +40,8 @@ public class Neo4JEntityDao implements EntityDao {
 			noEntity.setProperty("version", 0);
 			tx.success();
 
-			entityTypeNode.createRelationshipTo(noEntity,
-					Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE);
+			noEntity.createRelationshipTo(entityTypeNode,
+					Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE);
 			tx.success();
 
 			entity.setId(autoIncrementId);
@@ -50,47 +49,40 @@ public class Neo4JEntityDao implements EntityDao {
 			return entity;
 		} catch (Exception e) {
 			e.printStackTrace();
+			return null;
 		}
-
-		return null;
 	}
 
 	@Override
 	public Entity findEntityById(Long id) {
 		Entity entity = null;
 
+		String query = "MATCH (e:" + NodeType.ENTITY + " {id: " + id + "})-[r:"
+				+ Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE + "]->(et:"
+				+ NodeType.ENTITY_TYPE + ") return e, et";
+
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
-						"MATCH (et:" + NodeType.ENTITY_TYPE + ")-[:"
-								+ Neo4JRelation.HAS_A_ENTITY
-								+ "]->(e) WHERE e.id=" + id + " return e, et")) {
+						query)) {
 
-			Iterator<Node> iterator = result.columnAs("e");
-			for (Node node : IteratorUtil.asIterable(iterator)) {
-				entity = newEntity(node);
-				break;
-			}
+			if (result.hasNext()) {
+				Map<String, Object> next = result.next();
+				Node nodeE = (Node) next.get("e");
+				Node nodeET = (Node) next.get("et");
 
-			if (entity != null) {
-				Iterator<Node> iterator2 = result.columnAs("et");
-				for (Node node : IteratorUtil.asIterable(iterator2)) {
-					entity.setEntityType(newEntityType(node));
-					break;
-				}
+				EntityType entityType = Neo4JEntityTypeDao
+						.newEntityType(nodeET);
+				entity = this.newEntity(nodeE);
+				entity.setEntityType(entityType);
 			}
+		}
+		List<Property> properties = Neo4JPropertyDAO
+				.findPropertiesByEntity(entity);
+		if (entity != null) {
+			entity.setProperties(properties);
 		}
 
 		return entity;
-	}
-
-	private EntityType newEntityType(Node node) {
-		EntityType entityType = new EntityType();
-		entityType.setId((Long) node.getProperty("id"));
-		entityType.setVersion((Integer) node.getProperty("version"));
-		entityType.setNamespace((String) node.getProperty("namespace"));
-		entityType.setName((String) node.getProperty("name"));
-
-		return entityType;
 	}
 
 	private Entity newEntity(Node node) {
@@ -104,26 +96,30 @@ public class Neo4JEntityDao implements EntityDao {
 	@Override
 	public List<Entity> findEntitiesByEntityTypeId(Long entityTypeId) {
 		List<Entity> entities = new LinkedList<Entity>();
-
+		String query = "MATCH (e:" + NodeType.ENTITY + ")-[r:"
+				+ Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE + "]->(et:"
+				+ NodeType.ENTITY_TYPE + " {id: " + entityTypeId
+				+ "}) return e, et";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
-						"MATCH (et:" + NodeType.ENTITY_TYPE + ")-[:"
-								+ Neo4JRelation.HAS_A_ENTITY
-								+ "]->(e) WHERE et.id=" + entityTypeId
-								+ " return e, et")) {
+						query)) {
+			if (result.hasNext()) {
+				Map<String, Object> next = result.next();
+				Node nodeE = (Node) next.get("e");
+				Node nodeET = (Node) next.get("et");
 
-			Iterator<Node> iterator = result.columnAs("e");
-			for (Node node : IteratorUtil.asIterable(iterator)) {
-				entities.add(newEntity(node));
-				break;
+				EntityType entityType = Neo4JEntityTypeDao
+						.newEntityType(nodeET);
+				Entity entity = this.newEntity(nodeE);
+				entity.setEntityType(entityType);
+				entities.add(entity);
 			}
-
-			for (Entity entity : entities) {
-				Iterator<Node> iterator2 = result.columnAs("et");
-				for (Node node : IteratorUtil.asIterable(iterator2)) {
-					entity.setEntityType(newEntityType(node));
-					break;
-				}
+		}
+		for (Entity entity : entities) {
+			List<Property> properties = Neo4JPropertyDAO
+					.findPropertiesByEntity(entity);
+			if (entity != null) {
+				entity.setProperties(properties);
 			}
 		}
 		return entities;
