@@ -8,10 +8,12 @@ import com.nanuvem.lom.api.dao.PropertyTypeDao;
 
 public class Neo4JDaoFactory implements DaoFactory {
 
-	private Neo4JPropertyTypeDao propertyTypeDao = null;
 	private Neo4JEntityTypeDao entityTypeDao;
+	private Neo4JPropertyTypeDao propertyTypeDao;
+	private Neo4JEntityDao entityDao;
+	private Neo4JPropertyDAO propertyDao;
 
-	private Neo4JConnector connector;
+	private Neo4JConnector connector = new Neo4JConnector();
 
 	public EntityTypeDao createEntityTypeDao() {
 		if (this.entityTypeDao == null) {
@@ -21,7 +23,7 @@ public class Neo4JDaoFactory implements DaoFactory {
 	}
 
 	public PropertyTypeDao createPropertyTypeDao() {
-		if (this.propertyTypeDao != null) {
+		if (this.propertyTypeDao == null) {
 			this.propertyTypeDao = new Neo4JPropertyTypeDao(connector,
 					(Neo4JEntityTypeDao) createEntityTypeDao());
 		}
@@ -29,22 +31,27 @@ public class Neo4JDaoFactory implements DaoFactory {
 	}
 
 	public EntityDao createEntityDao() {
-		// TODO Auto-generated method stub
-		return null;
+		if (this.entityDao == null) {
+			this.entityDao = new Neo4JEntityDao(connector,
+					(Neo4JEntityTypeDao) createEntityTypeDao(), propertyTypeDao);
+		}
+		return this.entityDao;
 	}
 
 	public PropertyDao createPropertyDao() {
-		// TODO Auto-generated method stub
-		return null;
+		if (this.propertyDao == null) {
+			this.propertyDao = new Neo4JPropertyDAO(connector,
+					(Neo4JEntityDao) createEntityDao(),
+					(Neo4JPropertyTypeDao) propertyTypeDao);
+		}
+		return this.propertyDao;
 	}
 
 	public void createDatabaseSchema() {
-		// TODO Auto-generated method stub
+		
 	}
 
 	public void dropDatabaseSchema() {
-		// TODO Auto-generated method stub
-
+		this.connector.dropDatabase();
 	}
-
 }

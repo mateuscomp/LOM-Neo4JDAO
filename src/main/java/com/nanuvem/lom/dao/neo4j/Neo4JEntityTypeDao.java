@@ -11,6 +11,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 
 import com.nanuvem.lom.api.EntityType;
 import com.nanuvem.lom.api.MetadataException;
+import com.nanuvem.lom.api.PropertyType;
 import com.nanuvem.lom.api.dao.EntityTypeDao;
 
 public class Neo4JEntityTypeDao implements EntityTypeDao {
@@ -34,6 +35,7 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 			tx.success();
 
 			entityType.setId(autoIncrementId);
+			entityType.setVersion(0);
 			return entityType;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -96,6 +98,7 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 		return entitiesTypes;
 	}
 
+	// Trazer tbm os PropertyTypes
 	public EntityType findByFullName(String fullName) {
 		String namespace = null;
 		try {
@@ -115,24 +118,37 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 			name = null;
 		}
 
-		List<EntityType> entitiesTypes = new LinkedList<EntityType>();
+		EntityType entityType = null;
 		try (Transaction tx = connector.iniciarTransacao();
+		// Result result = connector.getGraphDatabaseService().execute(
+		// "MATCH (n:" + NodeType.ENTITY_TYPE
+		// + ") WHERE lower(n.namespace) = lower('" + namespace
+		// + "') AND lower(n.name) = lower('" + name + "') return n")) {
+
 				Result result = connector.getGraphDatabaseService().execute(
-						"MATCH (n:" + NodeType.ENTITY_TYPE
-								+ ") WHERE n.namespace = '" + namespace
-								+ "' AND n.name = '" + name + "' return n")) {
+						"MATCH (et:" + NodeType.ENTITY_TYPE + ") "
+								+ "OPTIONAL MATCH (et)-[r]-(pt) "
+								+ "WHERE lower(et.namespace) = lower('"
+								+ namespace + "') AND lower(et.name) = lower('"
+								+ name + "') return et, pt")) {
 
-			Iterator<Node> iterator = result.columnAs("n");
-			for (Node node : IteratorUtil.asIterable(iterator)) {
-				EntityType entityType = newEntityType(node);
-				entitiesTypes.add(entityType);
+			Iterator<Node> iteratorEntityType = result.columnAs("et");
+			for (Node node : IteratorUtil.asIterable(iteratorEntityType)) {
+				entityType = newEntityType(node);
 			}
-		}
 
-		if (entitiesTypes.isEmpty()) {
-			return null;
+			if (entityType != null) {
+				List<PropertyType> propertiesTypes = new LinkedList<PropertyType>();
+				Iterator<Node> iteratorPropertyType = result.columnAs("pt");
+				for (Node node : IteratorUtil.asIterable(iteratorPropertyType)) {
+					propertiesTypes.add(Neo4JPropertyTypeDao
+							.newPropertyType(node));
+				}
+				entityType.setAttributes(propertiesTypes);
+			}
+
 		}
-		return entitiesTypes.get(0);
+		return entityType;
 	}
 
 	public EntityType update(EntityType entityType) {
@@ -167,7 +183,7 @@ public class Neo4JEntityTypeDao implements EntityTypeDao {
 	}
 
 	public void delete(Long id) {
-		
+
 	}
 
 	public static EntityType newEntityType(Node node) {

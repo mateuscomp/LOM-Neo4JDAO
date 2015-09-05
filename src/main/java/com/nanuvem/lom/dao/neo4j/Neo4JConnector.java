@@ -47,7 +47,9 @@ public class Neo4JConnector {
 		return graphDatabaseService;
 	}
 
-	public void drop() {
+	public void dropDatabase() {
+		this.graphDatabaseService.shutdown();
+//		graphDatabaseService = null;
 		try {
 			FileUtils.deleteRecursively(new File(DB_PATH));
 		} catch (IOException e) {

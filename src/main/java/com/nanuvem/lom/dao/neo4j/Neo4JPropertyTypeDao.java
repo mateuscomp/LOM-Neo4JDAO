@@ -45,8 +45,13 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 			noPropertyType.setProperty("name", propertyType.getName());
 			noPropertyType.setProperty("type", propertyType.getType()
 					.toString());
+			
+			if(propertyType.getConfiguration() == null){
+				propertyType.setConfiguration("");
+			}
 			noPropertyType.setProperty("configuration",
 					propertyType.getConfiguration());
+			
 			tx.success();
 
 			noPropertyType.createRelationshipTo(entityTypeNode,
@@ -54,6 +59,7 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 			tx.success();
 
 			propertyType.setId(autoIncrementId);
+			propertyType.setVersion(0);
 			return propertyType;
 		} catch (Exception e) {
 			return null;
@@ -84,7 +90,7 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 		return propertyType;
 	}
 
-	public PropertyType newPropertyType(Node node) {
+	public static PropertyType newPropertyType(Node node) {
 		PropertyType propertyType = new PropertyType();
 		propertyType.setId((Long) node.getProperty("id"));
 		

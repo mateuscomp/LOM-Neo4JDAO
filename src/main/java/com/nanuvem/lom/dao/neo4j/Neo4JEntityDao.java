@@ -130,6 +130,10 @@ public class Neo4JEntityDao implements EntityDao {
 				entity.setProperties(properties);
 			}
 		}
+
+//		if (entities.isEmpty()) {
+//			return null;
+//		}
 		return entities;
 	}
 
