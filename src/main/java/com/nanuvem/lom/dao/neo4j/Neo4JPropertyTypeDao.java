@@ -45,13 +45,13 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 			noPropertyType.setProperty("name", propertyType.getName());
 			noPropertyType.setProperty("type", propertyType.getType()
 					.toString());
-			
-			if(propertyType.getConfiguration() == null){
+
+			if (propertyType.getConfiguration() == null) {
 				propertyType.setConfiguration("");
 			}
 			noPropertyType.setProperty("configuration",
 					propertyType.getConfiguration());
-			
+
 			tx.success();
 
 			noPropertyType.createRelationshipTo(entityTypeNode,
@@ -93,19 +93,19 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	public static PropertyType newPropertyType(Node node) {
 		PropertyType propertyType = new PropertyType();
 		propertyType.setId((Long) node.getProperty("id"));
-		
+
 		try {
 			propertyType.setVersion((Integer) node.getProperty("version"));
 		} catch (Exception e) {
 			Long version = (Long) node.getProperty("version");
 			propertyType.setVersion(Integer.parseInt(version.toString()));
 		}
-		
+
 		propertyType.setName((String) node.getProperty("name"));
 		propertyType.setConfiguration((String) node
 				.getProperty("configuration"));
 		propertyType.setType(Type.getType((String) node.getProperty("type")));
-		
+
 		try {
 			propertyType.setSequence((Integer) node.getProperty("version"));
 		} catch (Exception e) {
@@ -128,10 +128,10 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 		PropertyType propertyType = null;
 
-		String query = "MATCH (pt:PROPERTY_TYPE {name: '" + propertyTypeName
-				+ "'})-[r:" + Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
-				+ "]->(et:ENTITY_TYPE {namespace: '" + namespace + "', name: '"
-				+ name + "'}) RETURN pt, et";
+		String query = "MATCH (pt:PROPERTY_TYPE)-[r:" + Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE + "]->(et:ENTITY_TYPE) "
+						+ " WHERE lower(pt.name)='" + propertyTypeName.toLowerCase() + "' AND lower(et.namespace)='" + namespace.toLowerCase() + "' AND lower(et.name)='" + name.toLowerCase() + "' "
+						+ " RETURN pt, et";
+		System.out.println(query);
 
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
@@ -165,8 +165,9 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 		String query = "MATCH (pt:PROPERTY_TYPE)-[r:"
 				+ Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE
-				+ "]->(et:ENTITY_TYPE {namespace: '" + namespace + "', name: '"
-				+ name + "'}) RETURN pt, et";
+				+ "]->(et:ENTITY_TYPE) WHERE "
+				+ "lower(et.namespace)='"+namespace.toLowerCase()+"'"
+				+ " AND lower(et.name)='"+name.toLowerCase()+"' RETURN pt, et";
 
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
@@ -190,6 +191,7 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 	@Override
 	public PropertyType update(PropertyType propertyType) {
+		propertyType.setVersion(propertyType.getVersion() + 1);
 		String query = "MATCH (n:" + NodeType.PROPERTY_TYPE + " {" + "id: "
 				+ propertyType.getId() + "}) " + " SET" + " n.name= '"
 				+ propertyType.getName() + "', " + "n.version= "

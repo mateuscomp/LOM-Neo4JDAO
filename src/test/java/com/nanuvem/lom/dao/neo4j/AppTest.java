@@ -91,7 +91,14 @@ public class AppTest {
 		System.out.println("\n");
 		System.out.println("========= CONSULTA 4 =========");
 		System.out.println(propertyTypeDao.findPropertyTypeById(2L));
-
+		
+		System.out.println("\n");
+		System.out.println("========= CONSULTA 5.0 =========");
+		List<PropertyType> ot = propertyTypeDao.findPropertiesTypesByFullNameEntityType("Rodrigo.Vilar");
+		for(PropertyType pty : ot){
+			System.out.println(pty);
+		}
+		
 		System.out.println("\n");
 		System.out.println("========= CONSULTA 5 =========");
 		System.out.println(propertyTypeDao
@@ -107,7 +114,7 @@ public class AppTest {
 		}
 		System.out.println("\n");
 
-		System.out.println("========= Update EntityType=========");
+		System.out.println("========= Update PropertyType=========");
 		PropertyType propertyType = propertyTypeDao
 				.findPropertyTypeByNameAndEntityTypeFullName("propertyType1",
 						"Rodrigo.Vilar");

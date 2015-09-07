@@ -62,7 +62,7 @@ public class Neo4JPropertyDAO implements PropertyDao {
 	@Override
 	public Property update(Property property) {
 		String query = "MATCH (p:" + NodeType.PROPERTY + " {" + "id: "
-				+ property.getId() + "}) " + " SET" + " p.version= '"
+				+ property.getId() + "}) " + " SET" + " p.version="
 				+ property.getVersion() + " return p";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
@@ -103,7 +103,7 @@ public class Neo4JPropertyDAO implements PropertyDao {
 		return null;
 	}
 
-	private static Property newProperty(Node node) {
+	public static Property newProperty(Node node) {
 		Property property = new Property();
 		property.setId((Long) node.getProperty("id"));
 		try {
