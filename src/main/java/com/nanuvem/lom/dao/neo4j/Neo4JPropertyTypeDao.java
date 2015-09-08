@@ -41,7 +41,12 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 			noPropertyType.setProperty("id", ++autoIncrementId);
 			noPropertyType.setProperty("version", 0);
+			
+			if(propertyType.getSequence() == null){
+				propertyType.setSequence(0);
+			}
 			noPropertyType.setProperty("sequence", propertyType.getSequence());
+			
 			noPropertyType.setProperty("name", propertyType.getName());
 			noPropertyType.setProperty("type", propertyType.getType()
 					.toString());
@@ -70,8 +75,8 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 	public PropertyType findPropertyTypeById(Long id) {
 		PropertyType propertyType = null;
 
-		String query = "MATCH (pt:" + NodeType.PROPERTY_TYPE + " { id: " + id
-				+ "})--(et) RETURN pt, et";
+		String query = "MATCH (pt:PROPERTY_TYPE)-[r:" + Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE + "]->(et:ENTITY_TYPE) "
+				+ "WHERE pt.id = "+id+"  RETURN et, pt";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
@@ -107,7 +112,7 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 		propertyType.setType(Type.getType((String) node.getProperty("type")));
 
 		try {
-			propertyType.setSequence((Integer) node.getProperty("version"));
+			propertyType.setSequence((Integer) node.getProperty("sequence"));
 		} catch (Exception e) {
 			Long version = (Long) node.getProperty("sequence");
 			propertyType.setSequence(Integer.parseInt(version.toString()));
@@ -131,8 +136,6 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 		String query = "MATCH (pt:PROPERTY_TYPE)-[r:" + Neo4JRelation.IS_A_PROPERTY_TYPE_OF_ENTITY_TYPE + "]->(et:ENTITY_TYPE) "
 						+ " WHERE lower(pt.name)='" + propertyTypeName.toLowerCase() + "' AND lower(et.namespace)='" + namespace.toLowerCase() + "' AND lower(et.name)='" + name.toLowerCase() + "' "
 						+ " RETURN pt, et";
-		System.out.println(query);
-
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
@@ -191,6 +194,10 @@ public class Neo4JPropertyTypeDao implements PropertyTypeDao {
 
 	@Override
 	public PropertyType update(PropertyType propertyType) {
+		if(propertyType.getSequence() == null){
+			propertyType.setSequence(0);
+		}
+		
 		propertyType.setVersion(propertyType.getVersion() + 1);
 		String query = "MATCH (n:" + NodeType.PROPERTY_TYPE + " {" + "id: "
 				+ propertyType.getId() + "}) " + " SET" + " n.name= '"
