@@ -42,7 +42,6 @@ public class Neo4JEntityDao implements EntityDao {
 					NodeType.ENTITY);
 			noEntity.setProperty("id", ++autoIncrementId);
 			noEntity.setProperty("version", 0);
-			tx.success();
 
 			noEntity.createRelationshipTo(entityTypeNode,
 					Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE);
@@ -50,6 +49,7 @@ public class Neo4JEntityDao implements EntityDao {
 
 			entity.setId(autoIncrementId);
 			entity.setVersion(0);
+
 			return entity;
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -104,19 +104,26 @@ public class Neo4JEntityDao implements EntityDao {
 	@Override
 	public List<Entity> findEntitiesByEntityTypeId(Long entityTypeId) {
 		List<Entity> entities = new LinkedList<Entity>();
-		String query = "MATCH (et:" + NodeType.ENTITY_TYPE 
-				+ ")-[r:"+Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE+"]-(e:ENTITY) "
-				+ " OPTIONAL MATCH(e:ENTITY)-[r2:"+Neo4JRelation.IS_A_PROPERTY_OF_ENTITY+"]-(p:"+NodeType.PROPERTY+") WHERE et.id= " + entityTypeId
-				+ " return e, et, p";
-		
+		// String query = "MATCH (et:" + NodeType.ENTITY_TYPE +
+		// ")-[r:"+Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE+"]-(e:"+NodeType.ENTITY+") "
+		// + " WHERE et.id= " + entityTypeId
+		// +
+		// " OPTIONAL MATCH(e:"+NodeType.ENTITY+")-[r2:"+Neo4JRelation.IS_A_PROPERTY_OF_ENTITY+"]-(p:"+NodeType.PROPERTY+") "
+		// + " return e, et, p";
+
+		String query = "MATCH (et:" + NodeType.ENTITY_TYPE + ")-[r:"
+				+ Neo4JRelation.IS_A_ENTITY_OF_ENTITY_TYPE + "]-(e:"
+				+ NodeType.ENTITY + ") " + " WHERE et.id= " + entityTypeId
+				+ " return e, et";
+
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
-			
+
 			EntityType entityType = null;
 			while (result.hasNext()) {
 				Map<String, Object> next = result.next();
-				
+
 				Node nodeEt = (Node) next.get("et");
 				if (entityType == null) {
 					entityType = Neo4JEntityTypeDao.newEntityType(nodeEt);
@@ -129,8 +136,8 @@ public class Neo4JEntityDao implements EntityDao {
 					entities.add(entity);
 				}
 			}
-			
-			for(Entity entity : entities){
+
+			for (Entity entity : entities) {
 				entity.setProperties(this.getProperties(entity));
 			}
 		}
@@ -143,13 +150,13 @@ public class Neo4JEntityDao implements EntityDao {
 		String query = "MATCH (e:" + NodeType.ENTITY + " {" + "id: "
 				+ entity.getId() + "}) " + " SET" + " e.version= "
 				+ entity.getVersion() + " return e";
-		
+
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
 			tx.success();
 		}
-		
+
 		return findEntityById(entity.getId());
 	}
 
@@ -183,46 +190,30 @@ public class Neo4JEntityDao implements EntityDao {
 		}
 		return null;
 	}
-	
+
 	private List<Property> getProperties(Entity entity) {
 		List<Property> properties = new LinkedList<Property>();
-	
-		String query = "MATCH (e:" + NodeType.ENTITY + " {id: " + entity.getId() + "})-[r:"
+
+		String query = "MATCH (e:" + NodeType.ENTITY + ")-[r:"
 				+ Neo4JRelation.IS_A_PROPERTY_OF_ENTITY + "]-(p:"
-				+ NodeType.PROPERTY + ") return e, p";
+				+ NodeType.PROPERTY + ")-[rr:"+Neo4JRelation.HAS_A_VALUE_FOR_PROPERTY_TYPE+"]-(pt:"+NodeType.PROPERTY_TYPE+")"
+						+ "WHERE e.id = "+entity.getId()+" return p, pt ORDER BY p.id";
 
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
-			
-			Entity entityFound = null;
+
 			while (result.hasNext()) {
 				Map<String, Object> next = result.next();
-				Node nodeE = (Node) next.get("e");
-				entityFound = newEntity(nodeE);
-				
 				Node nodeP = (Node) next.get("p");
 				Property property = Neo4JPropertyDAO.newProperty(nodeP);
 				properties.add(property);
+				
+				Node nodePT = (Node) next.get("pt");
+				PropertyType propertyType = Neo4JPropertyTypeDao.newPropertyType(nodePT);
+				property.setPropertyType(propertyType);
 			}
 		}
-		
-		for(Property property : properties){
-			property.setPropertyType(this.getPropertyType(property));
-		}
-		
 		return properties;
-	}	
-
-	private PropertyType getPropertyType(Property property) {
-		String query = "MATCH (p:" + NodeType.PROPERTY + " {id: " + property.getId() + "})-[r:"+ Neo4JRelation.HAS_A_VALUE_FOR_PROPERTY_TYPE + "]-(pt:" + NodeType.PROPERTY_TYPE + ") return pt, p";
-
-		try (Transaction tx = connector.iniciarTransacao();
-				Result result = connector.getGraphDatabaseService().execute(
-						query)) {
-			
-//			System.out.println(result.resultAsString());
-		}	
-		return null;
 	}
 }

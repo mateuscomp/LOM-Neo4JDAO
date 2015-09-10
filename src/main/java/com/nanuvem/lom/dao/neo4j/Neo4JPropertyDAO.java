@@ -42,7 +42,10 @@ public class Neo4JPropertyDAO implements PropertyDao {
 					NodeType.PROPERTY);
 			noProperty.setProperty("id", ++autoIncrementId);
 			noProperty.setProperty("version", 0);
-			noProperty.setProperty("value", property.getValue());
+			
+			if(property.getValue() != null)
+				noProperty.setProperty("value", property.getValue());
+			
 			tx.success();
 
 			noProperty.createRelationshipTo(entityNode,
@@ -63,7 +66,7 @@ public class Neo4JPropertyDAO implements PropertyDao {
 	public Property update(Property property) {
 		String query = "MATCH (p:" + NodeType.PROPERTY + " {" + "id: "
 				+ property.getId() + "}) " + " SET" + " p.version="
-				+ property.getVersion() + " return p";
+				+ property.getVersion() + " return p ORDER BY p.id";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
@@ -76,7 +79,7 @@ public class Neo4JPropertyDAO implements PropertyDao {
 		String query = "MATCH " + "(p:" + NodeType.PROPERTY + ")-[er]->(e:"
 				+ NodeType.ENTITY + "), " + "(p:" + NodeType.PROPERTY
 				+ ")-[pr]->(pt:" + NodeType.PROPERTY_TYPE + ")"
-				+ " WHERE p.id=" + id + " RETURN p, e, pt";
+				+ " WHERE p.id=" + id + " RETURN p, e, pt ORDER BY p.id";
 		try (Transaction tx = connector.iniciarTransacao();
 				Result result = connector.getGraphDatabaseService().execute(
 						query)) {
@@ -112,7 +115,10 @@ public class Neo4JPropertyDAO implements PropertyDao {
 			Long version = (Long) node.getProperty("version");
 			property.setVersion(Integer.parseInt(version.toString()));
 		}
-		property.setValue((String) node.getProperty("value"));
+		
+		if(node.hasProperty("value")){
+			property.setValue((String) node.getProperty("value"));
+		}
 
 		return property;
 	}
@@ -123,7 +129,8 @@ public class Neo4JPropertyDAO implements PropertyDao {
 		String query = "MATCH " + "(p:" + NodeType.PROPERTY + ")-[er]->(e:"
 				+ NodeType.ENTITY + "), " + "(p:" + NodeType.PROPERTY
 				+ ")-[pr]->(pt:" + NodeType.PROPERTY_TYPE + ")"
-				+ " WHERE e.id=" + entity.getId() + " RETURN p, e, pt";
+				+ " WHERE e.id=" + entity.getId() + " RETURN p, e, pt "
+				+ " ORDER BY p.id";
 
 		List<Property> properties = new LinkedList<Property>();
 		try (Transaction tx = connector.iniciarTransacao();
